@@ -1,7 +1,8 @@
-/*server.js*/
 const express = require("express");
 const cors = require("cors");
 const app = express();
+
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 app.use(cors());
 
@@ -86,7 +87,27 @@ const sta = [
     {line: "EAL", sta: "LMC", description: "Lok Ma Chau"},
 ];
 
+function getRandomStation() {
+    return sta[Math.floor(Math.random() * sta.length)];
+}
 
+app.get("/mtr", function (req, res) {
+    res.writeHead(200, {
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+    });
+    setInterval(async () => {
+        let s = getRandomStation();
+        let data = await fetch("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line="+s.line+"&sta="+s.sta)
+            .then(response => {return response.json();})
+            .then(data => {return data;});
+        console.log(data);
+        res.write("data:" + JSON.stringify(data));
+        res.write("\n\n");
+    }, 10000);
+  });
+  
 const stocks = [
   { id: 1, ticker: "AAPL", price: 497.48 },
   { id: 2, ticker: "MSFT", price: 213.02 },
